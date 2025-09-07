@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Acronimi Informatici - Tron Style</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --main-color: #0ff;
+            --secondary-color: #6cf;
+            --bg-color: #000;
+            --grid-color: rgba(0, 255, 255, 0.1);
+            --correct-color: #0f0;
+            --wrong-color: #f00;
+            --option-bg: rgba(0, 30, 40, 0.8);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Orbitron', 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--main-color);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--main-color);
+            box-shadow: 0 0 15px var(--main-color);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px var(--main-color);
+            letter-spacing: 2px;
+        }
+        
+        .quiz-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+        
+        @media (min-width: 768px) {
+            .quiz-container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .questions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        /* Stile per la scrollbar */
+        .questions::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .questions::-webkit-scrollbar-track {
+            background: rgba(0, 30, 40, 0.8);
+            border-radius: 4px;
+        }
+        
+        .questions::-webkit-scrollbar-thumb {
+            background: var(--main-color);
+            border-radius: 4px;
+        }
+        
+        .question {
+            background: rgba(0, 20, 30, 0.7);
+            border: 1px solid var(--main-color);
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .question:hover {
+            box-shadow: 0 0 15px var(--main-color);
+            transform: translateY(-2px);
+        }
+        
+        .question p {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .options {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        
+        @media (min-width: 480px) {
+            .options {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: var(--option-bg);
+            border: 1px solid var(--secondary-color);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .option:hover {
+            box-shadow: 0 0 8px var(--secondary-color);
+        }
+        
+        .option input {
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        
+        .option label {
+            cursor: pointer;
+            flex-grow: 1;
+        }
+        
+        .correct {
+            color: var(--correct-color);
+            border-color: var(--correct-color);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        
+        .wrong {
+            color: var(--wrong-color);
+            border-color: var(--wrong-color);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+        }
+        
+        .results {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 20, 30, 0.7);
+            border: 1px solid var(--main-color);
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+        
+        .score {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px var(--main-color);
+        }
+        
+        .percentage {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: linear-gradient(to bottom, rgba(0, 200, 255, 0.8), rgba(0, 100, 200, 0.8));
+            color: #000;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 20px 0;
+            box-shadow: 0 0 10px var(--main-color);
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            box-shadow: 0 0 15px var(--main-color);
+            transform: scale(1.05);
+        }
+        
+        .glow {
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--main-color), 0 0 20px var(--main-color);
+            }
+            to {
+                text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px var(--main-color), 0 0 40px var(--main-color);
+            }
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 15px;
+            border-top: 1px solid var(--main-color);
+            font-size: 0.9rem;
+        }
+        
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0, 30, 40, 0.7);
+            border-radius: 5px;
+            border: 1px solid var(--main-color);
+        }
+        
+        .feedback h3 {
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-item {
+            padding: 10px;
+            background: rgba(0, 20, 30, 0.7);
+            border-radius: 4px;
+            border: 1px solid var(--secondary-color);
+        }
+        
+        .judgment {
+            padding: 15px;
+            background: rgba(0, 30, 40, 0.7);
+            border-radius: 4px;
+            border: 1px solid var(--main-color);
+            margin-top: 15px;
+        }
+        
+        .thumb {
+            margin-left: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .answer-feedback {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .correct-answer {
+            background: rgba(0, 100, 0, 0.3);
+            color: var(--correct-color);
+            border: 1px solid var(--correct-color);
+        }
+        
+        .wrong-answer {
+            background: rgba(100, 0, 0, 0.3);
+            color: var(--wrong-color);
+            border: 1px solid var(--wrong-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="glow">🖊️ACRONIUM📝</h1>
+        </header>
+        
+        <div class="quiz-container">
+            <div class="questions" id="questions-container">
+                <!-- Le domande saranno inserite qui tramite JavaScript -->
+            </div>
+            
+            <div class="results">
+                <div class="score" id="score">Punteggio: 0/50</div>
+                <div class="percentage" id="percentage">0%</div>
+                <div class="stats" id="stats">
+                    <!-- Le statistiche saranno inserite qui -->
+                </div>
+                <div class="chart-container">
+                    <canvas id="results-chart"></canvas>
+                </div>
+                <div class="judgment" id="judgment">
+                    <!-- Il giudizio sarà inserito qui -->
+                </div>
+                <button id="verify-btn">Verifica Risposte</button>
+                <button id="restart-btn" style="display:none;">Riprova Quiz</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Acronium 1.0 - Quiz sugli acronimi informatici</p>
+        </footer>
+    </div>
+
+    <script>
+        // Acronimi, risposte corrette e opzioni multiple
+        const quizData = [
+            {
+                acronym: "API",
+                correct: "Application Programming Interface",
+                options: [
+                    "Application Programming Interface",
+                    "Advanced Programming Interface",
+                    "Application Process Integration",
+                    "Automated Programming Interface"
+                ],
+                category: "Sviluppo Software"
+            },
+            {
+                acronym: "HTML",
+                correct: "HyperText Markup Language",
+                options: [
+                    "HyperText Markup Language",
+                    "HighTech Modern Language",
+                    "HyperTransfer Markup Language",
+                    "HyperText Modern Language"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "CSS",
+                correct: "Cascading Style Sheets",
+                options: [
+                    "Cascading Style Sheets",
+                    "Computer Style Sheets",
+                    "Creative Style System",
+                    "Cascading System Styles"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "SQL",
+                correct: "Structured Query Language",
+                options: [
+                    "Structured Query Language",
+                    "System Query Language",
+                    "Structured Question Language",
+                    "System Question Language"
+                ],
+                category: "Database"
+            },
+            {
+                acronym: "HTTP",
+                correct: "HyperText Transfer Protocol",
+                options: [
+                    "HyperText Transfer Protocol",
+                    "HighTech Transfer Protocol",
+                    "HyperText Transmission Protocol",
+                    "HighTech Transmission Protocol"
+                ],
+                category: "Reti"
+            },
+            {
+                acronym: "HTTPS",
+                correct: "HyperText Transfer Protocol Secure",
+                options: [
+                    "HyperText Transfer Protocol Secure",
+                    "HyperText Transfer Protocol System",
+                    "HighTech Transfer Protocol Secure",
+                    "HyperText Transfer Protection System"
+                ],
+                category: "Sicurezza"
+            },
+            {
+                acronym: "URL",
+                correct: "Uniform Resource Locator",
+                options: [
+                    "Uniform Resource Locator",
+                    "Universal Resource Locator",
+                    "Uniform Reference Locator",
+                    "Universal Reference Locator"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "IP",
+                correct: "Internet Protocol",
+                options: [
+                    "Internet Protocol",
+                    "Internet Provider",
+                    "International Protocol",
+                    "International Provider"
+                ],
+                category: "Reti"
+            },
+            {
+                acronym: "TCP",
+                correct: "Transmission Control Protocol",
+                options: [
+                    "Transmission Control Protocol",
+                    "Transfer Control Protocol",
+                    "Transmission Communication Protocol",
+                    "Transfer Communication Protocol"
+                ],
+                category: "Reti"
+            },
+            {
+                acronym: "UDP",
+                correct: "User Datagram Protocol",
+                options: [
+                    "User Datagram Protocol",
+                    "Universal Datagram Protocol",
+                    "User Data Protocol",
+                    "Universal Data Protocol"
+                ],
+                category: "Reti"
+            },
+            {
+                acronym: "DNS",
+                correct: "Domain Name System",
+                options: [
+                    "Domain Name System",
+                    "Domain Name Service",
+                    "Domain Network System",
+                    "Domain Network Service"
+                ],
+                category: "Reti"
+            },
+            {
+                acronym: "FTP",
+                correct: "File Transfer Protocol",
+                options: [
+                    "File Transfer Protocol",
+                    "File Transmission Protocol",
+                    "File Transfer Process",
+                    "File Transmission Process"
+                ],
+                category: "Reti"
+            },
+            {
+                acronym: "SSH",
+                correct: "Secure Shell",
+                options: [
+                    "Secure Shell",
+                    "Secure Socket Host",
+                    "System Secure Host",
+                    "System Secure Shell"
+                ],
+                category: "Sicurezza"
+            },
+            {
+                acronym: "SSL",
+                correct: "Secure Sockets Layer",
+                options: [
+                    "Secure Sockets Layer",
+                    "Secure System Layer",
+                    "System Sockets Layer",
+                    "System Security Layer"
+                ],
+                category: "Sicurezza"
+            },
+            {
+                acronym: "TLS",
+                correct: "Transport Layer Security",
+                options: [
+                    "Transport Layer Security",
+                    "Transfer Layer Security",
+                    "Transport Level Security",
+                    "Transfer Level Security"
+                ],
+                category: "Sicurezza"
+            },
+            {
+                acronym: "VPN",
+                correct: "Virtual Private Network",
+                options: [
+                    "Virtual Private Network",
+                    "Virtual Public Network",
+                    "Verified Private Network",
+                    "Verified Public Network"
+                ],
+                category: "Sicurezza"
+            },
+            {
+                acronym: "LAN",
+                correct: "Local Area Network",
+                options: [
+                    "Local Area Network",
+                    "Local Access Network",
+                    "Large Area Network",
+                    "Large Access Network"
+                ],
+                category: "Reti"
+            },
+            {
+                acronym: "WAN",
+                correct: "Wide Area Network",
+                options: [
+                    "Wide Area Network",
+                    "Wide Access Network",
+                    "Web Area Network",
+                    "Web Access Network"
+                ],
+                category: "Reti"
+            },
+            {
+                acronym: "RAM",
+                correct: "Random Access Memory",
+                options: [
+                    "Random Access Memory",
+                    "Random Allocation Memory",
+                    "Read Access Memory",
+                    "Read Allocation Memory"
+                ],
+                category: "Hardware"
+            },
+            {
+                acronym: "ROM",
+                correct: "Read Only Memory",
+                options: [
+                    "Read Only Memory",
+                    "Read Only Module",
+                    "Random Only Memory",
+                    "Random Only Module"
+                ],
+                category: "Hardware"
+            },
+            {
+                acronym: "CPU",
+                correct: "Central Processing Unit",
+                options: [
+                    "Central Processing Unit",
+                    "Central Process Unit",
+                    "Computer Processing Unit",
+                    "Computer Process Unit"
+                ],
+                category: "Hardware"
+            },
+            {
+                acronym: "GPU",
+                correct: "Graphics Processing Unit",
+                options: [
+                    "Graphics Processing Unit",
+                    "Graphics Process Unit",
+                    "Game Processing Unit",
+                    "Game Process Unit"
+                ],
+                category: "Hardware"
+            },
+            {
+                acronym: "OS",
+                correct: "Operating System",
+                options: [
+                    "Operating System",
+                    "Operation System",
+                    "Operating Software",
+                    "Operation Software"
+                ],
+                category: "Sistemi Operativi"
+            },
+            {
+                acronym: "UI",
+                correct: "User Interface",
+                options: [
+                    "User Interface",
+                    "User Integration",
+                    "Universal Interface",
+                    "Universal Integration"
+                ],
+                category: "Design"
+            },
+            {
+                acronym: "UX",
+                correct: "User Experience",
+                options: [
+                    "User Experience",
+                    "User Expression",
+                    "Universal Experience",
+                    "Universal Expression"
+                ],
+                category: "Design"
+            },
+            {
+                acronym: "JSON",
+                correct: "JavaScript Object Notation",
+                options: [
+                    "JavaScript Object Notation",
+                    "JavaScript Object Network",
+                    "Java Object Notation",
+                    "Java Object Network"
+                ],
+                category: "Sviluppo Software"
+            },
+            {
+                acronym: "XML",
+                correct: "eXtensible Markup Language",
+                options: [
+                    "eXtensible Markup Language",
+                    "eXtensible Modern Language",
+                    "eXecutable Markup Language",
+                    "eXecutable Modern Language"
+                ],
+                category: "Sviluppo Software"
+            },
+            {
+                acronym: "PDF",
+                correct: "Portable Document Format",
+                options: [
+                    "Portable Document Format",
+                    "Portable Data Format",
+                    "Printable Document Format",
+                    "Printable Data Format"
+                ],
+                category: "Formati File"
+            },
+            {
+                acronym: "JPG",
+                correct: "Joint Photographic Experts Group",
+                options: [
+                    "Joint Photographic Experts Group",
+                    "Joint Photographic Experts Graphics",
+                    "Joint Portable Experts Group",
+                    "Joint Portable Experts Graphics"
+                ],
+                category: "Formati File"
+            },
+            {
+                acronym: "PNG",
+                correct: "Portable Network Graphics",
+                options: [
+                    "Portable Network Graphics",
+                    "Portable Network Group",
+                    "Printable Network Graphics",
+                    "Printable Network Group"
+                ],
+                category: "Formati File"
+            },
+            {
+                acronym: "GIF",
+                correct: "Graphics Interchange Format",
+                options: [
+                    "Graphics Interchange Format",
+                    "Graphics Interchange File",
+                    "Graphics Internet Format",
+                    "Graphics Internet File"
+                ],
+                category: "Formati File"
+            },
+            {
+                acronym: "SVG",
+                correct: "Scalable Vector Graphics",
+                options: [
+                    "Scalable Vector Graphics",
+                    "Scalable Vector Group",
+                    "Standard Vector Graphics",
+                    "Standard Vector Group"
+                ],
+                category: "Formati File"
+            },
+            {
+                acronym: "IDE",
+                correct: "Integrated Development Environment",
+                options: [
+                    "Integrated Development Environment",
+                    "Integrated Development Engine",
+                    "International Development Environment",
+                    "International Development Engine"
+                ],
+                category: "Sviluppo Software"
+            },
+            {
+                acronym: "SDK",
+                correct: "Software Development Kit",
+                options: [
+                    "Software Development Kit",
+                    "Software Development Key",
+                    "System Development Kit",
+                    "System Development Key"
+                ],
+                category: "Sviluppo Software"
+            },
+            {
+                acronym: "CMS",
+                correct: "Content Management System",
+                options: [
+                    "Content Management System",
+                    "Content Management Service",
+                    "Content Management Software",
+                    "Content Management Service"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "CRM",
+                correct: "Customer Relationship Management",
+                options: [
+                    "Customer Relationship Management",
+                    "Customer Relationship Manager",
+                    "Client Relationship Management",
+                    "Client Relationship Manager"
+                ],
+                category: "Business"
+            },
+            {
+                acronym: "ERP",
+                correct: "Enterprise Resource Planning",
+                options: [
+                    "Enterprise Resource Planning",
+                    "Enterprise Resource Process",
+                    "Enterprise Relationship Planning",
+                    "Enterprise Relationship Process"
+                ],
+                category: "Business"
+            },
+            {
+                acronym: "SaaS",
+                correct: "Software as a Service",
+                options: [
+                    "Software as a Service",
+                    "System as a Service",
+                    "Software as a Solution",
+                    "System as a Solution"
+                ],
+                category: "Cloud Computing"
+            },
+            {
+                acronym: "PaaS",
+                correct: "Platform as a Service",
+                options: [
+                    "Platform as a Service",
+                    "Platform as a Solution",
+                    "Process as a Service",
+                    "Process as a Solution"
+                ],
+                category: "Cloud Computing"
+            },
+            {
+                acronym: "IaaS",
+                correct: "Infrastructure as a Service",
+                options: [
+                    "Infrastructure as a Service",
+                    "Infrastructure as a Solution",
+                    "Integration as a Service",
+                    "Integration as a Solution"
+                ],
+                category: "Cloud Computing"
+            },
+            {
+                acronym: "CDN",
+                correct: "Content Delivery Network",
+                options: [
+                    "Content Delivery Network",
+                    "Content Delivery Node",
+                    "Content Distribution Network",
+                    "Content Distribution Node"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "SEO",
+                correct: "Search Engine Optimization",
+                options: [
+                    "Search Engine Optimization",
+                    "Search Engine Operation",
+                    "System Engine Optimization",
+                    "System Engine Operation"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "DOM",
+                correct: "Document Object Model",
+                options: [
+                    "Document Object Model",
+                    "Document Object Management",
+                    "Data Object Model",
+                    "Data Object Management"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "REST",
+                correct: "Representational State Transfer",
+                options: [
+                    "Representational State Transfer",
+                    "Representational System Transfer",
+                    "Resource State Transfer",
+                    "Resource System Transfer"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "SOAP",
+                correct: "Simple Object Access Protocol",
+                options: [
+                    "Simple Object Access Protocol",
+                    "Simple Object Access Process",
+                    "System Object Access Protocol",
+                    "System Object Access Process"
+                ],
+                category: "Web Development"
+            },
+            {
+                acronym: "OOP",
+                correct: "Object-Oriented Programming",
+                options: [
+                    "Object-Oriented Programming",
+                    "Object-Oriented Process",
+                    "Object-Oriented Protocol",
+                    "Object-Oriented Platform"
+                ],
+                category: "Sviluppo Software"
+            },
+            {
+                acronym: "BIOS",
+                correct: "Basic Input Output System",
+                options: [
+                    "Basic Input Output System",
+                    "Basic Input Output Service",
+                    "Basic Integrated Output System",
+                    "Basic Integrated Output Service"
+                ],
+                category: "Hardware"
+            },
+            {
+                acronym: "ASCII",
+                correct: "American Standard Code for Information Interchange",
+                options: [
+                    "American Standard Code for Information Interchange",
+                    "American Standard Code for Information Integration",
+                    "Advanced Standard Code for Information Interchange",
+                    "Advanced Standard Code for Information Integration"
+                ],
+                category: "Standard"
+            }
+        ];
+
+        // Variabili globali
+        let startTime, endTime;
+        let attempts = parseInt(localStorage.getItem('quizAttempts')) || 0;
+        let resultsChart = null;
+        let wrongAnswersByCategory = {};
+
+        // Mescola le domande per un ordine casuale
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Mescola anche le opzioni per ogni domanda
+        function shuffleOptions(questions) {
+            return questions.map(q => {
+                return {
+                    acronym: q.acronym,
+                    correct: q.correct,
+                    options: shuffleArray([...q.options]),
+                    category: q.category
+                };
+            });
+        }
+
+        const shuffledQuizData = shuffleOptions(shuffleArray([...quizData]));
+        
+        // Crea le domande
+        function createQuestions() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+            
+            shuffledQuizData.forEach((item, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question';
+                questionDiv.id = `question-${index}`;
+                questionDiv.dataset.category = item.category;
+                
+                let optionsHTML = '';
+                item.options.forEach((option, optIndex) => {
+                    const optionLetter = String.fromCharCode(65 + optIndex); // A, B, C, D
+                    optionsHTML += `
+                        <div class="option">
+                            <input type="radio" id="q${index}-${optIndex}" name="q${index}" value="${option}">
+                            <label for="q${index}-${optIndex}">${optionLetter}. ${option}</label>
+                        </div>
+                    `;
+                });
+                
+                questionDiv.innerHTML = `
+                    <p>${index + 1}. Cosa significa <strong>${item.acronym}</strong>?</p>
+                    <div class="options">
+                        ${optionsHTML}
+                    </div>
+                `;
+                container.appendChild(questionDiv);
+            });
+        }
+        
+        // Verifica le risposte
+        function verifyAnswers() {
+            let correctCount = 0;
+            wrongAnswersByCategory = {};
+            
+            shuffledQuizData.forEach((item, index) => {
+                const questionDiv = document.getElementById(`question-${index}`);
+                const selectedOption = document.querySelector(`input[name="q${index}"]:checked`);
+                const options = questionDiv.querySelectorAll('.option');
+                
+                // Rimuovi classi precedenti
+                questionDiv.classList.remove('correct', 'wrong');
+                
+                // Rimuovi eventuali feedback precedenti
+                const oldFeedback = questionDiv.querySelector('.answer-feedback');
+                if (oldFeedback) {
+                    oldFeedback.remove();
+                }
+                
+                // Rimuovi eventuali thumbs
+                const oldThumbs = questionDiv.querySelectorAll('.thumb');
+                oldThumbs.forEach(thumb => thumb.remove());
+                
+                if (selectedOption) {
+                    if (selectedOption.value === item.correct) {
+                        questionDiv.classList.add('correct');
+                        correctCount++;
+                        
+                        // Aggiungi icona di conferma
+                        const label = selectedOption.nextElementSibling;
+                        label.innerHTML += ' <span class="thumb"><i class="fas fa-thumbs-up"></i></span>';
+                    } else {
+                        questionDiv.classList.add('wrong');
+                        
+                        // Aggiungi icona di errore
+                        const label = selectedOption.nextElementSibling;
+                        label.innerHTML += ' <span class="thumb"><i class="fas fa-thumbs-down"></i></span>';
+                        
+                        // Trova l'opzione corretta e evidenziala
+                        options.forEach(opt => {
+                            const input = opt.querySelector('input');
+                            if (input.value === item.correct) {
+                                opt.classList.add('correct');
+                                const label = input.nextElementSibling;
+                                label.innerHTML += ' <span class="thumb"><i class="fas fa-thumbs-up"></i></span>';
+                            }
+                        });
+                        
+                        // Aggiungi feedback con la risposta corretta
+                        const feedback = document.createElement('div');
+                        feedback.className = 'answer-feedback correct-answer';
+                        feedback.innerHTML = `<strong>Risposta corretta:</strong> ${item.correct}`;
+                        questionDiv.appendChild(feedback);
+                        
+                        // Registra l'errore per categoria
+                        if (!wrongAnswersByCategory[item.category]) {
+                            wrongAnswersByCategory[item.category] = 0;
+                        }
+                        wrongAnswersByCategory[item.category]++;
+                    }
+                } else {
+                    // Nessuna risposta selezionata
+                    questionDiv.classList.add('wrong');
+                    
+                    // Evidenzia la risposta corretta
+                    options.forEach(opt => {
+                        const input = opt.querySelector('input');
+                        if (input.value === item.correct) {
+                            opt.classList.add('correct');
+                            const label = input.nextElementSibling;
+                            label.innerHTML += ' <span class="thumb"><i class="fas fa-thumbs-up"></i></span>';
+                        }
+                    });
+                    
+                    // Aggiungi feedback con la risposta corretta
+                    const feedback = document.createElement('div');
+                    feedback.className = 'answer-feedback correct-answer';
+                    feedback.innerHTML = `<strong>Risposta corretta:</strong> ${item.correct}`;
+                    questionDiv.appendChild(feedback);
+                    
+                    // Registra l'errore per categoria
+                    if (!wrongAnswersByCategory[item.category]) {
+                        wrongAnswersByCategory[item.category] = 0;
+                    }
+                    wrongAnswersByCategory[item.category]++;
+                }
+            });
+            
+            // Calcola la percentuale
+            const percentage = Math.round((correctCount / shuffledQuizData.length) * 100);
+            
+            // Aggiorna il punteggio
+            document.getElementById('score').textContent = `Punteggio: ${correctCount}/${shuffledQuizData.length}`;
+            document.getElementById('percentage').textContent = `${percentage}%`;
+            
+            // Calcola il tempo impiegato
+            endTime = new Date();
+            const timeTaken = Math.round((endTime - startTime) / 1000); // in secondi
+            const minutes = Math.floor(timeTaken / 60);
+            const seconds = timeTaken % 60;
+            
+            // Aggiorna le statistiche
+            attempts++;
+            localStorage.setItem('quizAttempts', attempts);
+            
+            const statsHTML = `
+                <div class="stat-item">
+                    <p>Hai risposto correttamente a: <strong>${correctCount}</strong></p>
+                </div>
+                <div class="stat-item">
+                    <p>Hai sbagliato: <strong>${shuffledQuizData.length - correctCount}</strong></p>
+                </div>
+                <div class="stat-item">
+                    <p>Il quiz è stato ripetuto: <strong>${attempts}</strong> volte</p>
+                </div>
+                <div class="stat-item">
+                    <p>Tempo impiegato: <strong>${minutes} minuti e ${seconds} secondi</strong></p>
+                </div>
+            `;
+            
+            document.getElementById('stats').innerHTML = statsHTML;
+            
+            // Aggiorna il grafico
+            updateChart(correctCount, shuffledQuizData.length - correctCount);
+            
+            // Mostra il giudizio
+            showJudgment(percentage, correctCount);
+            
+            // Mostra il pulsante per ripetere il quiz
+            document.getElementById('restart-btn').style.display = 'inline-block';
+        }
+        
+        // Mostra il giudizio in base al punteggio
+        function showJudgment(percentage, correctCount) {
+            const judgmentDiv = document.getElementById('judgment');
+            let judgmentHTML = '<h3>Valutazione delle tue competenze:</h3>';
+            
+            if (percentage >= 90) {
+                judgmentHTML += `<p>Eccellente! La tua conoscenza degli acronimi informatici è impressionante. Hai totalizzato ${correctCount} risposte corrette su ${shuffledQuizData.length}.</p>`;
+            } else if (percentage >= 70) {
+                judgmentHTML += `<p>Buono! Hai una buona conoscenza degli acronimi informatici, ma c'è ancora margine di miglioramento. Hai totalizzato ${correctCount} risposte corrette su ${shuffledQuizData.length}.</p>`;
+            } else if (percentage >= 50) {
+                judgmentHTML += `<p>Discreto. Conosci gli acronimi di base, ma dovresti approfondire alcuni argomenti. Hai totalizzato ${correctCount} risposte corrette su ${shuffledQuizData.length}.</p>`;
+            } else {
+                judgmentHTML += `<p>C'è molto da migliorare. Ti consiglio di studiare maggiormente gli acronimi informatici. Hai totalizzato ${correctCount} risposte corrette su ${shuffledQuizData.length}.</p>`;
+            }
+            
+            // Aggiungi suggerimenti per categoria
+            if (Object.keys(wrongAnswersByCategory).length > 0) {
+                judgmentHTML += '<p><strong>Suggerimenti per migliorare:</strong></p><ul>';
+                
+                for (const category in wrongAnswersByCategory) {
+                    judgmentHTML += `<li>Dovresti studiare di più gli acronimi relativi a <strong>${category}</strong> (${wrongAnswersByCategory[category]} errori)</li>`;
+                }
+                
+                judgmentHTML += '</ul>';
+            }
+            
+            judgmentDiv.innerHTML = judgmentHTML;
+        }
+        
+        // Aggiorna il grafico a torta
+        function updateChart(correct, wrong) {
+            const ctx = document.getElementById('results-chart').getContext('2d');
+            
+            // Se esiste già un grafico, distruggilo
+            if (resultsChart) {
+                resultsChart.destroy();
+            }
+            
+            // Crea un nuovo grafico
+            resultsChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Corrette', 'Errate'],
+                    datasets: [{
+                        data: [correct, wrong],
+                        backgroundColor: [
+                            'rgba(0, 255, 0, 0.7)',
+                            'rgba(255, 0, 0, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(0, 255, 0, 1)',
+                            'rgba(255, 0, 0, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#0ff',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Ripristina il quiz
+        function restartQuiz() {
+            startTime = new Date();
+            createQuestions();
+            document.getElementById('score').textContent = `Punteggio: 0/${shuffledQuizData.length}`;
+            document.getElementById('percentage').textContent = '0%';
+            document.getElementById('stats').innerHTML = '';
+            document.getElementById('judgment').innerHTML = '';
+            document.getElementById('restart-btn').style.display = 'none';
+            
+            // Reimposta il grafico
+            updateChart(0, 0);
+        }
+        
+        // Inizializza la pagina
+        document.addEventListener('DOMContentLoaded', function() {
+            startTime = new Date();
+            createQuestions();
+            
+            // Aggiungi l'event listener al pulsante di verifica
+            document.getElementById('verify-btn').addEventListener('click', verifyAnswers);
+            
+            // Aggiungi l'event listener al pulsante di riavvio
+            document.getElementById('restart-btn').addEventListener('click', restartQuiz);
+            
+            // Inizializza il grafico con valori zero
+            updateChart(0, 0);
+        });
+    </script>
+</body>
+</html>
