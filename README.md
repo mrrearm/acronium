@@ -1,2 +1,2 @@
-# acromium
+# acronium
 Quiz informatico sugli acronimi. 
